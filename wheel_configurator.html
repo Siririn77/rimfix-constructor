@@ -81,7 +81,7 @@
       letter-spacing: .06em;
       color: var(--muted-hi);
       white-space: nowrap;
-      max-width: 120px;
+      max-width: 200px;
       overflow: hidden;
       text-overflow: ellipsis;
     }
@@ -417,21 +417,26 @@
       background: radial-gradient(circle at 100% 100%, rgba(24,223,97,.04) 0%,transparent 65%);
     }
     .preview-header {
-      position: relative; 
+      position: relative;
       z-index: 2;
-      padding: 11px 20px; 
+      padding: 12px 20px;
       border-bottom: 1px solid var(--border);
-      display: flex; 
-      align-items: center; 
-      gap: 14px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
       background: rgba(12,13,15,.7);
       flex-shrink: 0;
+      flex-wrap: wrap;
+      row-gap: 8px;
+      min-height: 56px;
+      align-content: center;
     }
     #carName {
       font-family: var(--f-display);
       font-size: 1.8rem;
       letter-spacing: .06em;
-      flex: 1;
+      flex: 1 1 auto;
+      min-width: 0;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -446,6 +451,12 @@
       letter-spacing: .1em;
       text-transform: uppercase;
       color: var(--muted);
+      flex-shrink: 0;
+    }
+    .status-wrap {
+      display: flex;
+      align-items: center;
+      gap: 6px;
       flex-shrink: 0;
     }
     .hdr-dot {
@@ -547,26 +558,27 @@
     @media (max-width: 740px) {
       /* preview header on mobile */
       .preview-header {
-        padding: 8px 14px;
-        min-height: 48px;
+        padding: 10px 14px;
         flex-wrap: wrap;
-        row-gap: 4px;
+        row-gap: 6px;
+        column-gap: 12px;
       }
       #carName {
-        font-size: 1.15rem;
+        font-size: 1.25rem;
         font-weight: 700;
-        flex-basis: 100%;
-        order: -1;
+        flex: 1 1 100%;
+        min-width: 0;
       }
       #status {
-        font-size: .75rem;
-        max-width: 100px;
+        font-size: .8rem;
+        max-width: 180px;
       }
       .hdr-badge {
         order: 1;
       }
       .status-wrap {
         order: 2;
+        margin-left: auto;
       }
 
       /* layout: tabbar on bottom, canvas above */
@@ -577,19 +589,11 @@
         padding-bottom: var(--safe-bottom);
       }
       .sidebar { display: none; }
-      .preview-area { 
-        order: 1; 
+      .preview-area {
+        order: 1;
         border-bottom: 1px solid var(--border);
       }
-      .preview-header { 
-        padding: 8px 14px; 
-        min-height: 48px;
-      }
-      #carName { 
-        font-size: 1.15rem; 
-        font-weight: 700;
-      }
-      .preview-stage { 
+      .preview-stage {
         padding: 12px; 
         min-height: 200px;
       }
@@ -897,6 +901,21 @@
         width: 22px;
         height: 22px;
       }
+      .preview-header {
+        padding: 8px 10px;
+        gap: 8px;
+        row-gap: 6px;
+      }
+      #carName {
+        font-size: 1.1rem;
+      }
+      .hdr-badge {
+        font-size: .75rem;
+      }
+      #status {
+        max-width: 150px;
+        font-size: .75rem;
+      }
     }
     
     /* Animation for sheet entrance */
@@ -1107,9 +1126,9 @@ function onOpenCvLoaded() {
     updateStatus('Не удалось загрузить OpenCV.js','error'); 
     return; 
   }
-  cv['onRuntimeInitialized'] = () => { 
-    cvReady = true; 
-    updateStatus('OpenCV.js готов','success'); 
+  cv['onRuntimeInitialized'] = () => {
+    cvReady = true;
+    updateStatus('Конструктор готов','success');
   };
 }
 
