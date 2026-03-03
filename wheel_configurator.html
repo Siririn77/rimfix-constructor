@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Конфигуратор колес - OpenCV.js (единый шаблон)</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: Arial, sans-serif;
+            background: #1a1a2e;
+            color: #fff;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #00d9ff;
+        }
+        .container {
+            display: flex;
+            gap: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        .selection-panel {
+            width: 250px;
+            background: #16213e;
+            padding: 20px;
+            border-radius: 10px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        .selection-panel h2 {
+            margin-bottom: 15px;
+            color: #00d9ff;
+            font-size: 18px;
+        }
+        .car-list, .wheel-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 30px;
+        }
+        .car-item, .wheel-item {
+            padding: 10px;
+            background: #0f3460;
+            border: 2px solid transparent;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: center;
+        }
+        .car-item:hover, .wheel-item:hover {
+            border-color: #00d9ff;
+            transform: translateX(5px);
+        }
+        .car-item.selected, .wheel-item.selected {
+            border-color: #00d9ff;
+            background: #1a1a2e;
+        }
+        .car-item img, .wheel-item img {
+            width: 100%;
+            height: 60px;
+            object-fit: contain;
+            display: block;
+        }
+        .preview-area {
+            flex: 1;
+            background: #16213e;
+            padding: 20px;
+            border-radius: 10px;
+            min-height: 600px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .canvas-container { position: relative; display: inline-block; }
+        #carCanvas { max-width: 100%; max-height: 500px; display: block; }
+        .car-name {
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 24px;
+            color: #00d9ff;
+        }
+        .wheel-name { font-size: 12px; color: #aaa; }
+        .status {
+            margin-top: 10px;
+            padding: 10px;
+            background: #0f3460;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        .status.success { color: #00ff88; }
+        .status.info    { color: #00d9ff; }
+        .status.error   { color: #ff4444; }
+    </style>
+
+    <!-- Локальный OpenCV.js -->
+    <script async
+            src="opencv.js"
+            onload="onOpenCvLoaded();"></script>
+</head>
+<body>
+    <h1>Конфигуратор колес - OpenCV.js (единый шаблон)</h1>
+    
+    <div class="container">
+        <div class="selection-panel">
+            <h2>Выберите кузов</h2>
+            <div class="car-list" id="carList"></div>
+            
+            <h2>Выберите диски</h2>
+            <div class="wheel-list" id="wheelList"></div>
+        </div>
+        
+        <div class="preview-area">
+            <div class="car-name" id="carName">Выберите кузов</div>
+            <div class="canvas-container">
+                <canvas id="carCanvas"></canvas>
+            </div>
+            <div class="status" id="status">Загрузка OpenCV.js...</div>
+        </div>
+    </div>
+
+    <script>
+        // ---------- OpenCV init ----------
+        let cvReady = false;
+
+        function onOpenCvLoaded() {
+            if (typeof cv === 'undefined') {
+                updateStatus('Не удалось загрузить OpenCV.js', 'error');
+                return;
+            }
+            cv['onRuntimeInitialized'] = () => {
+                cvReady = true;
+                updateStatus('OpenCV.js загружен. Выберите кузов и диски', 'info');
+            };
+        }
+
+        // ---------- Данные ----------
+        const carTypes = [
+            { id: 'sedan',      name: 'Седан',      src: 'car_types/sedan.png' },
+            { id: 'hatchback',  name: 'Хэтчбек',   src: 'car_types/hatchback.png' },
+            { id: 'coupe',      name: 'Купе',      src: 'car_types/coupe.png' },
+            { id: 'cabriolet',  name: 'Кабриолет', src: 'car_types/cabriolet.png' },
+            { id: 'crossover',  name: 'Кроссовер', src: 'car_types/crossover.png' },
+            { id: 'minivan',    name: 'Минивэн',   src: 'car_types/minivan.png' },
+            { id: 'pickup',     name: 'Пикап',     src: 'car_types/pickup.png' },
+            { id: 'uni',        name: 'Универсал', src: 'car_types/wagon.png' }
+        ];
+
+        const wheelTypes = [
+            { id: 'wheel1', name: 'Диск 1', src: 'wheel_types/wheel1.png' },
+            { id: 'wheel2', name: 'Диск 2', src: 'wheel_types/wheel2.png' }
+        ];
+
+        // === ЕДИНЫЙ ШАБЛОН ДЛЯ ВСЕХ КУЗОВОВ ===
+        const REPLACE_PART_SRC = 'other_assets/replace_part.png';
+        
+        // Опционально: тонкая настройка под каждый кузов (смещения, масштаб)
+        // Если не нужны — оставьте все значения 0 / 1.0
+        const carAdjustments = {
+            sedan:     { dx: 0,  dy: 0,  radiusScale: 1.0 },
+            hatchback: { dx: 0,  dy: 0,  radiusScale: 1.0 },
+            coupe:     { dx: 0,  dy: 0,  radiusScale: 1.0 },
+            cabriolet: { dx: 0,  dy: 0,  radiusScale: 1.0 },
+            crossover: { dx: 0,  dy: 0,  radiusScale: 1.0 },
+            minivan:   { dx: 0,  dy: 0,  radiusScale: 1.0 },
+            pickup:    { dx: 0,  dy: 0,  radiusScale: 1.0 },
+            uni:       { dx: 0,  dy: 0,  radiusScale: 1.0 }
+        };
+
+        let selectedCar   = null;
+        let selectedWheel = null;
+        let carImage   = null;
+        let wheelImage = null;
+
+        // Кэш: один шаблон для всех { image, centerX, centerY, radius }
+        let commonTemplate = null;
+
+        const canvas = document.getElementById('carCanvas');
+        const ctx    = canvas.getContext('2d');
+
+        // ---------- Утилиты ----------
+        function loadImage(src) {
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                img.crossOrigin = 'anonymous';
+                img.onload  = () => resolve(img);
+                img.onerror = () => reject(new Error('Не удалось загрузить: ' + src));
+                img.src = src;
+            });
+        }
+
+        function updateStatus(text, type) {
+            const statusEl = document.getElementById('status');
+            statusEl.textContent = text;
+            statusEl.className = 'status ' + type;
+        }
+
+        function initCarList() {
+            const carList = document.getElementById('carList');
+            carTypes.forEach(car => {
+                const div = document.createElement('div');
+                div.className = 'car-item';
+                div.innerHTML = `<img src="${car.src}" alt="${car.name}"><div>${car.name}</div>`;
+                div.onclick = () => selectCar(car, div);
+                carList.appendChild(div);
+            });
+        }
+
+        function initWheelList() {
+            const wheelList = document.getElementById('wheelList');
+            wheelTypes.forEach(wheel => {
+                const div = document.createElement('div');
+                div.className = 'wheel-item';
+                div.innerHTML = `<img src="${wheel.src}" alt="${wheel.name}"><div class="wheel-name">${wheel.name}</div>`;
+                div.onclick = () => selectWheel(wheel, div);
+                wheelList.appendChild(div);
+            });
+        }
+
+        // Анализ шаблона: центр и радиус колеса внутри replace_part
+        function analyzeWheelTemplate(image) {
+            const c = document.createElement('canvas');
+            c.width  = image.width;
+            c.height = image.height;
+            const cctx = c.getContext('2d');
+            cctx.drawImage(image, 0, 0);
+
+            const idata = cctx.getImageData(0, 0, c.width, c.height);
+            const data  = idata.data;
+
+            const points = [];
+            for (let y = 0; y < c.height; y++) {
+                for (let x = 0; x < c.width; x++) {
+                    const idx = (y * c.width + x) * 4;
+                    const r = data[idx];
+                    const g = data[idx + 1];
+                    const b = data[idx + 2];
+                    const brightness = (r + g + b) / 3;
+                    if (brightness > 30) {
+                        points.push({ x, y });
+                    }
+                }
+            }
+
+            if (points.length === 0) {
+                return {
+                    centerX: c.width  / 2,
+                    centerY: c.height / 2,
+                    radius:  Math.min(c.width, c.height) / 2
+                };
+            }
+
+            let sumX = 0, sumY = 0;
+            let minX = Infinity, maxX = -Infinity;
+            let minY = Infinity, maxY = -Infinity;
+
+            for (const p of points) {
+                sumX += p.x;
+                sumY += p.y;
+                if (p.x < minX) minX = p.x;
+                if (p.x > maxX) maxX = p.x;
+                if (p.y < minY) minY = p.y;
+                if (p.y > maxY) maxY = p.y;
+            }
+
+            const centerX = sumX / points.length;
+            const centerY = sumY / points.length;
+            const radius  = Math.max(maxX - minX, maxY - minY) / 2;
+
+            return { centerX, centerY, radius };
+        }
+
+        // Получить общий шаблон (загружается один раз для всех кузовов)
+        async function getCommonTemplate() {
+            if (commonTemplate) return commonTemplate;
+
+            const img = await loadImage(REPLACE_PART_SRC);
+            const baseInfo = analyzeWheelTemplate(img);
+
+            commonTemplate = {
+                image: img,
+                centerX: baseInfo.centerX,
+                centerY: baseInfo.centerY,
+                radius:  baseInfo.radius
+            };
+            return commonTemplate;
+        }
+
+        // ---------- Выбор кузова / диска ----------
+        async function selectCar(car, element) {
+            selectedCar = car;
+
+            document.querySelectorAll('.car-item').forEach(i => i.classList.remove('selected'));
+            element.classList.add('selected');
+
+            document.getElementById('carName').textContent = car.name;
+
+            if (!cvReady) {
+                updateStatus('OpenCV.js ещё инициализируется, подожди...', 'info');
+                return;
+            }
+
+            updateStatus('Загрузка изображения кузова...', 'info');
+
+            try {
+                carImage = await loadImage(car.src);
+                canvas.width  = carImage.width;
+                canvas.height = carImage.height;
+                ctx.drawImage(carImage, 0, 0);
+
+                if (selectedWheel) {
+                    await applyWheelsWithOpenCV();
+                } else {
+                    updateStatus('Выберите диски', 'info');
+                }
+            } catch (e) {
+                updateStatus('Ошибка загрузки изображения: ' + e.message, 'error');
+            }
+        }
+
+        async function selectWheel(wheel, element) {
+            selectedWheel = wheel;
+
+            document.querySelectorAll('.wheel-item').forEach(i => i.classList.remove('selected'));
+            element.classList.add('selected');
+
+            if (!cvReady) {
+                updateStatus('OpenCV.js ещё инициализируется, подожди...', 'info');
+                return;
+            }
+
+            updateStatus('Загрузка диска...', 'info');
+
+            try {
+                wheelImage = await loadImage(wheel.src);
+
+                if (selectedCar) {
+                    await applyWheelsWithOpenCV();
+                } else {
+                    updateStatus('Выберите кузов', 'info');
+                }
+            } catch (e) {
+                updateStatus('Ошибка загрузки диска: ' + e.message, 'error');
+            }
+        }
+
+        // ---------- OpenCV.js: matchTemplate с единым шаблоном ----------
+        async function applyWheelsWithOpenCV() {
+            if (!carImage || !wheelImage || !selectedCar || !cvReady) return;
+
+            // Загружаем общий шаблон (один для всех)
+            const baseTpl = await getCommonTemplate();
+            if (!baseTpl) {
+                updateStatus('Нет шаблона replace_part', 'error');
+                return;
+            }
+
+            // Применяем опциональные настройки под конкретный кузов
+            const adj = carAdjustments[selectedCar.id] || { dx: 0, dy: 0, radiusScale: 1.0 };
+            const tpl = {
+                image: baseTpl.image,
+                centerX: baseTpl.centerX + adj.dx,
+                centerY: baseTpl.centerY + adj.dy,
+                radius:  baseTpl.radius  * adj.radiusScale
+            };
+
+            updateStatus('Поиск колёс с помощью OpenCV.js...', 'info');
+
+            ctx.drawImage(carImage, 0, 0);
+
+            let src = null, templ = null, srcGray = null, templGray = null, result = null;
+            let srcSmall = null, templSmall = null;
+
+            try {
+                src   = cv.imread(createTmpCanvasFromImage(carImage));
+                templ = cv.imread(createTmpCanvasFromImage(tpl.image));
+
+                srcGray   = new cv.Mat();
+                templGray = new cv.Mat();
+                cv.cvtColor(src,   srcGray,   cv.COLOR_RGBA2GRAY);
+                cv.cvtColor(templ, templGray, cv.COLOR_RGBA2GRAY);
+
+                const scale = 0.5;
+                srcSmall   = new cv.Mat();
+                templSmall = new cv.Mat();
+                const dsizeSrc  = new cv.Size(Math.round(srcGray.cols * scale),  Math.round(srcGray.rows * scale));
+                const dsizeTmpl = new cv.Size(Math.round(templGray.cols * scale), Math.round(templGray.rows * scale));
+                cv.resize(srcGray,   srcSmall,   dsizeSrc,  0, 0, cv.INTER_AREA);
+                cv.resize(templGray, templSmall, dsizeTmpl, 0, 0, cv.INTER_AREA);
+
+                const resultCols = srcSmall.cols - templSmall.cols + 1;
+                const resultRows = srcSmall.rows - templSmall.rows + 1;
+                result = new cv.Mat.zeros(resultRows, resultCols, cv.CV_32FC1);
+
+                cv.matchTemplate(srcSmall, templSmall, result, cv.TM_CCOEFF_NORMED);
+                cv.normalize(result, result, 0, 1, cv.NORM_MINMAX, -1);
+
+                const matchesSmall = findTopNMatchesOpenCV(result, 2, 0.6);
+
+                if (!matchesSmall.length) {
+                    updateStatus('Не удалось найти области для колёс (matchTemplate)', 'error');
+                    cleanupMats();
+                    return;
+                }
+
+                const matches = matchesSmall.map(m => ({
+                    x: m.x / scale,
+                    y: m.y / scale,
+                    score: m.score
+                }));
+
+                matches.sort((a, b) => a.x - b.x);
+
+                const templateRadius = tpl.radius;
+                const scaleWheel = 0.9;
+                // === ИЗМЕНЕНИЕ: увеличиваем колесо в 1.5 раза ===
+                const wheelSizeMultiplier = 1.5;
+                const wheelRadius = templateRadius * scaleWheel * wheelSizeMultiplier;
+                const wheelSize   = wheelRadius * 2;
+
+                for (const m of matches) {
+                    const centerX = m.x + tpl.centerX;
+                    const centerY = m.y + tpl.centerY;
+
+                    ctx.drawImage(
+                        wheelImage,
+                        0, 0, wheelImage.width, wheelImage.height,
+                        centerX - wheelSize / 2,
+                        centerY - wheelSize / 2,
+                        wheelSize,
+                        wheelSize
+                    );
+                }
+
+                updateStatus('Колёса установлены (единый шаблон, увеличены в 1.5 раза)', 'success');
+            } catch (e) {
+                console.error(e);
+                updateStatus('Ошибка OpenCV: ' + e.message, 'error');
+            } finally {
+                cleanupMats();
+            }
+
+            function cleanupMats() {
+                if (src)       src.delete();
+                if (templ)     templ.delete();
+                if (srcGray)   srcGray.delete();
+                if (templGray) templGray.delete();
+                if (result)    result.delete();
+                if (srcSmall)  srcSmall.delete();
+                if (templSmall)templSmall.delete();
+            }
+        }
+
+        function createTmpCanvasFromImage(image) {
+            const c = document.createElement('canvas');
+            c.width  = image.width;
+            c.height = image.height;
+            const cctx = c.getContext('2d');
+            cctx.drawImage(image, 0, 0);
+            return c;
+        }
+
+        function findTopNMatchesOpenCV(resultMat, n, minScore) {
+            const matches = [];
+            const rows = resultMat.rows;
+            const cols = resultMat.cols;
+            const data = resultMat.data32F;
+
+            for (let y = 0; y < rows; y++) {
+                for (let x = 0; x < cols; x++) {
+                    const score = data[y * cols + x];
+                    if (score >= minScore) {
+                        matches.push({ x, y, score });
+                    }
+                }
+            }
+
+            matches.sort((a, b) => b.score - a.score);
+
+            const picked = [];
+            const minDist = 10;
+            for (const m of matches) {
+                let ok = true;
+                for (const p of picked) {
+                    const dx = m.x - p.x;
+                    const dy = m.y - p.y;
+                    const dist = Math.sqrt(dx*dx + dy*dy);
+                    if (dist < minDist) { ok = false; break; }
+                }
+                if (ok) {
+                    picked.push(m);
+                    if (picked.length >= n) break;
+                }
+            }
+            return picked;
+        }
+
+        // ---------- init ----------
+        window.onload = function() {
+            initCarList();
+            initWheelList();
+        };
+    </script>
+</body>
+</html>
