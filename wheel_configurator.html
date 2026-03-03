@@ -76,7 +76,7 @@
     @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
     #status {
       font-family: var(--f-ui);
-      font-size: .7rem;
+      font-size: .85rem;
       font-weight: 600;
       letter-spacing: .06em;
       color: var(--muted-hi);
@@ -92,7 +92,7 @@
     /* ── DESKTOP WORKSPACE ──────────────────────────────── */
     .workspace {
       display: grid;
-      grid-template-columns: 200px 1fr;
+      grid-template-columns: 320px 1fr;
       height: calc(100vh - var(--safe-top));
       min-height: 0;
       max-width: 1400px;
@@ -113,8 +113,13 @@
       flex-direction: column;
       padding: 10px 10px;
       border-bottom: 1px solid var(--border);
-      flex: 1;
       min-height: 0;
+    }
+    .sidebar-section:first-child {
+      flex: 2;
+    }
+    .sidebar-section:nth-child(2) {
+      flex: 1;
     }
     .palette-section {
       flex-shrink: 0;
@@ -123,16 +128,16 @@
 
     .sec-label {
       font-family: var(--f-ui);
-      font-size: .62rem;
+      font-size: .85rem;
       font-weight: 700;
-      letter-spacing: .2em;
+      letter-spacing: .15em;
       text-transform: uppercase;
       color: var(--muted);
-      padding-bottom: 7px;
+      padding-bottom: 10px;
       flex-shrink: 0;
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 8px;
     }
     .sec-label::after {
       content: '';
@@ -169,43 +174,43 @@
     .car-item, .wheel-item {
       display: flex;
       align-items: center;
-      gap: 8px;
-      padding: 6px 8px;
+      gap: 12px;
+      padding: 10px 12px;
       background: var(--surface-hi);
       border: 1.5px solid transparent;
-      border-radius: 4px;
+      border-radius: 6px;
       cursor: pointer;
       user-select: none;
       transition: all .15s ease;
       -webkit-tap-highlight-color: transparent;
     }
-    .car-item:hover, .wheel-item:hover { 
-      border-color: var(--border-hi); 
-      background: #22252b; 
+    .car-item:hover, .wheel-item:hover {
+      border-color: var(--border-hi);
+      background: #22252b;
     }
     .car-item:active, .wheel-item:active {
       transform: scale(0.99);
     }
-    .car-item.selected, .wheel-item.selected { 
-      border-color: var(--accent); 
-      background: var(--accent-dim); 
+    .car-item.selected, .wheel-item.selected {
+      border-color: var(--accent);
+      background: var(--accent-dim);
       box-shadow: 0 0 0 1px rgba(24,223,97,0.2);
     }
     .car-item img, .wheel-item img {
-      width: 36px;
-      height: 22px;
+      width: 64px;
+      height: 40px;
       object-fit: contain;
       flex-shrink: 0;
       opacity: .82;
       transition: opacity .15s;
-      border-radius: 2px;
+      border-radius: 4px;
     }
     .car-item.selected img, .wheel-item.selected img {
       opacity: 1;
     }
     .item-label {
       font-family: var(--f-ui);
-      font-size: .8rem;
+      font-size: 1.05rem;
       font-weight: 600;
       letter-spacing: .04em;
       color: var(--muted-hi);
@@ -219,10 +224,10 @@
       color: var(--accent);
     }
     .item-check {
-      width: 14px;
-      height: 14px;
+      width: 18px;
+      height: 18px;
       border-radius: 50%;
-      border: 1.5px solid var(--border-hi);
+      border: 2px solid var(--border-hi);
       flex-shrink: 0;
       display: flex;
       align-items: center;
@@ -230,18 +235,18 @@
       transition: all .15s;
       flex-shrink: 0;
     }
-    .car-item.selected .item-check, 
-    .wheel-item.selected .item-check { 
-      border-color: var(--accent); 
-      background: var(--accent); 
+    .car-item.selected .item-check,
+    .wheel-item.selected .item-check {
+      border-color: var(--accent);
+      background: var(--accent);
       box-shadow: 0 0 0 1px rgba(0,0,0,0.2);
     }
-    .car-item.selected .item-check::after, 
+    .car-item.selected .item-check::after,
     .wheel-item.selected .item-check::after {
-      content: ''; 
-      width: 5px; 
-      height: 5px; 
-      border-radius: 50%; 
+      content: '';
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
       background: #000;
     }
     .wheel-name { display: none; }
@@ -250,14 +255,14 @@
     .swatch-grid {
       display: grid;
       grid-template-columns: repeat(6,1fr);
-      gap: 4px;
-      margin-bottom: 8px;
+      gap: 6px;
+      margin-bottom: 10px;
     }
     .swatch {
       position: relative;
       width: 100%;
       aspect-ratio: 1;
-      border-radius: 4px;
+      border-radius: 6px;
       cursor: pointer;
       border: 2px solid transparent;
       outline: none;
@@ -322,18 +327,18 @@
     }
     .custom-label {
       font-family: var(--f-ui);
-      font-size: .68rem;
+      font-size: .8rem;
       font-weight: 600;
-      letter-spacing: .1em;
+      letter-spacing: .08em;
       text-transform: uppercase;
       color: var(--muted);
       flex: 1;
     }
     .picker-wrap {
       position: relative;
-      width: 36px;
-      height: 26px;
-      border-radius: 4px;
+      width: 42px;
+      height: 32px;
+      border-radius: 6px;
       border: 2px solid var(--border-hi);
       overflow: hidden;
       cursor: pointer;
@@ -366,14 +371,14 @@
     }
     .color-name {
       font-family: var(--f-ui);
-      font-size: .7rem;
+      font-size: .9rem;
       font-weight: 600;
       letter-spacing: .05em;
       color: var(--muted-hi);
       min-height: 1.1em;
       text-align: center;
-      padding: 2px 4px;
-      border-radius: 3px;
+      padding: 4px 6px;
+      border-radius: 4px;
       transition: color .2s, background .2s;
     }
     .color-name[style*="--text"] {
@@ -422,24 +427,24 @@
       background: rgba(12,13,15,.7);
       flex-shrink: 0;
     }
-    #carName { 
-      font-family: var(--f-display); 
-      font-size: 1.5rem; 
-      letter-spacing: .06em; 
+    #carName {
+      font-family: var(--f-display);
+      font-size: 1.8rem;
+      letter-spacing: .06em;
       flex: 1;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
     }
     .hdr-badge {
-      display: flex; 
-      align-items: center; 
+      display: flex;
+      align-items: center;
       gap: 6px;
-      font-family: var(--f-ui); 
-      font-size: .72rem; 
-      font-weight: 600; 
-      letter-spacing: .1em; 
-      text-transform: uppercase; 
+      font-family: var(--f-ui);
+      font-size: .85rem;
+      font-weight: 600;
+      letter-spacing: .1em;
+      text-transform: uppercase;
       color: var(--muted);
       flex-shrink: 0;
     }
