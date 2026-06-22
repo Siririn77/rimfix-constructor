@@ -1132,6 +1132,7 @@ MOBILE  ≤ 740px
         }
     </style>
     <!-- OpenCV is loaded dynamically via JS with auto-retry — see loadOpenCV() below -->
+    <script src="assets.js"></script>
 </head>
 
 <body>
@@ -1285,18 +1286,18 @@ MOBILE  ≤ 740px
         DATA
         ══════════════════════════════════════════════════ */
         const CAR_TYPES = [
-            { id: 'sedan',     name: 'Седан',     src: 'car_types/sedan.png' },
-            { id: 'hatchback', name: 'Хэтчбек',   src: 'car_types/hatchback.png' },
-            { id: 'coupe',     name: 'Купе',       src: 'car_types/coupe.png' },
-            { id: 'cabriolet', name: 'Кабриолет',  src: 'car_types/cabriolet.png' },
-            { id: 'crossover', name: 'Кроссовер',  src: 'car_types/crossover.png' },
-            { id: 'minivan',   name: 'Минивэн',    src: 'car_types/minivan.png' },
-            { id: 'pickup',    name: 'Пикап',      src: 'car_types/pickup.png' },
-            { id: 'uni',       name: 'Универсал',  src: 'car_types/wagon.png' },
+            { id: 'sedan',     name: 'Седан',     src: ASSETS.car_types.sedan },
+            { id: 'hatchback', name: 'Хэтчбек',   src: ASSETS.car_types.hatchback },
+            { id: 'coupe',     name: 'Купе',       src: ASSETS.car_types.coupe },
+            { id: 'cabriolet', name: 'Кабриолет',  src: ASSETS.car_types.cabriolet },
+            { id: 'crossover', name: 'Кроссовер',  src: ASSETS.car_types.crossover },
+            { id: 'minivan',   name: 'Минивэн',    src: ASSETS.car_types.minivan },
+            { id: 'pickup',    name: 'Пикап',      src: ASSETS.car_types.pickup },
+            { id: 'uni',       name: 'Универсал',  src: ASSETS.car_types.wagon },
         ];
         const WHEEL_TYPES = [
-            { id: 'wheel1', name: 'Диск 1', src: 'wheel_types/wheel1.png' },
-            { id: 'wheel2', name: 'Диск 2', src: 'wheel_types/wheel2.png' },
+            { id: 'wheel1', name: 'Диск 1', src: ASSETS.wheel_types.wheel1 },
+            { id: 'wheel2', name: 'Диск 2', src: ASSETS.wheel_types.wheel2 },
         ];
         const PALETTE = [
             { id: 'original',   name: 'Оригинал',        hex: null },
@@ -1318,7 +1319,7 @@ MOBILE  ≤ 740px
             { id: 'orange',     name: 'Оранжевый',        hex: '#c2420c' },
             { id: 'purple',     name: 'Фиолетовый',       hex: '#6b21a8' },
         ];
-        const REPLACE_PART_SRC = 'other_assets/replace_part.png';
+        const REPLACE_PART_SRC = ASSETS.replace_part;
         const CAR_ADJ = {
             sedan:     { dx: 0, dy: 0, rs: 1 },
             hatchback: { dx: 0, dy: 0, rs: 1 },
@@ -1422,8 +1423,10 @@ MOBILE  ≤ 740px
 
             const script = document.createElement('script');
             script.id = 'cv-script';
-            // Cache-bust on every retry so the browser doesn't serve a stale failed response
-            script.src = CV_SRC + '?t=' + Date.now();
+            // No cache-bust query string: on file:// protocol it's useless and
+            // some browsers refuse to load file:// URLs with a query component.
+            // The auto-retry on onerror still handles genuinely failed loads.
+            script.src = CV_SRC;
             script.async = true;
 
             script.onload = function () {
@@ -1473,7 +1476,9 @@ MOBILE  ≤ 740px
             if (imageCache.has(src)) return Promise.resolve(imageCache.get(src));
             return new Promise((res, rej) => {
                 const img = new Image();
-                img.crossOrigin = 'anonymous';
+                // Images are embedded as base64 data URIs (see assets.js), so
+                // they are same-origin and never taint the canvas — the app
+                // works by double-clicking the HTML with no server required.
                 img.onload = () => { imageCache.set(src, img); res(img); };
                 img.onerror = () => rej(new Error('Не удалось загрузить: ' + src));
                 img.src = src;
